@@ -352,6 +352,7 @@ struct ssl_config_data {
   bool verifystatus;     /* set TRUE if certificate status must be checked */
   char *CApath;          /* certificate dir (doesn't work on windows) */
   char *CAfile;          /* certificate to verify peer against */
+  char *CAPEM;           /* PEM certificate text to verify peer against*/
   const char *CRLfile;   /* CRL to check certificate revocation */
   const char *issuercert;/* optional issuer certificate filename */
   char *random_file;     /* path to file containing "random" data */
@@ -1381,6 +1382,7 @@ enum dupstring {
   STRING_SET_URL,         /* what original URL to work on */
   STRING_SSL_CAPATH,      /* CA directory name (doesn't work on windows) */
   STRING_SSL_CAFILE,      /* certificate file to verify peer against */
+  STRING_SSL_CAPEM,       /* PEM encoded CA bundle (can have multiple) instead of files*/
   STRING_SSL_PINNEDPUBLICKEY, /* public key file to verify peer against */
   STRING_SSL_CIPHER_LIST, /* list of ciphers to use */
   STRING_SSL_EGDSOCKET,   /* path to file containing the EGD daemon socket */

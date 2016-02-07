@@ -1925,7 +1925,58 @@ static CURLcode ossl_connect_step1(struct connectdata *conn, int sockindex)
     }
   }
 #endif
-  if(data->set.str[STRING_SSL_CAFILE] || data->set.str[STRING_SSL_CAPATH]) {
+  if (data->set.str[STRING_SSL_CAPEM]) //override for using in-memory CAs
+  {
+	  bool bSuccess = true;
+	  unsigned int numCertsAdded = 0;
+	  X509_STORE* xStore = NULL;
+
+	  SSL_CTX_load_verify_locations(connssl->ctx,NULL,NULL);
+	  xStore = SSL_CTX_get_cert_store(connssl->ctx);
+	  
+	  if (!xStore)
+		  bSuccess = false;
+	  else
+	  {
+		  X509* cert = NULL;
+
+		  BIO* memBio = BIO_new(BIO_s_mem());
+		  BIO_puts(memBio, data->set.str[STRING_SSL_CAPEM]);
+
+
+		  while (cert = PEM_read_bio_X509(memBio, NULL, 0, NULL))
+		  {
+			  if (X509_STORE_add_cert(xStore, cert) == 0)
+			  {
+				  bSuccess = false;
+				  break;
+			  }
+			  numCertsAdded++;
+		  }
+
+		  BIO_free(memBio);
+
+		  if (numCertsAdded < 1)
+			  bSuccess = false;
+	  }
+
+	  if (!bSuccess)
+	  {
+		  if (data->set.ssl.verifypeer)
+		  {
+			  /* Fail if we insist on successfully verifying the server. */
+			  failf(data, "error setting certificate verify from memory.\n");
+			  return CURLE_SSL_CACERT_BADFILE;
+		  }
+		  else
+		  {
+			  /* Just continue with a warning if no strict  certificate verification
+			  is required. */
+			  infof(data, "error setting certificate verify from memory.\n");
+		  }
+	  }
+  }
+  else if(data->set.str[STRING_SSL_CAFILE] || data->set.str[STRING_SSL_CAPATH]) {
     /* tell SSL where to find CA certificates that are used to verify
        the servers certificate. */
     if(!SSL_CTX_load_verify_locations(connssl->ctx,

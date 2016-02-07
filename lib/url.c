@@ -2095,8 +2095,19 @@ CURLcode Curl_setopt(struct SessionHandle *data, CURLoption option,
     /*
      * Set CA info for SSL connection. Specify file name of the CA certificate
      */
-    result = setstropt(&data->set.str[STRING_SSL_CAFILE],
-                       va_arg(param, char *));
+	  //added possibility of direct PEM CA bundle
+  {
+	  char* userArg = va_arg(param, char *);
+
+	  if (strncmp(userArg, "-----BEGIN CERTIFICATE-----", 27) == 0)
+	  {
+		  result = setstropt(&data->set.str[STRING_SSL_CAPEM], userArg);
+	  }
+	  else //normal CURL case of filename
+	  {
+		  result = setstropt(&data->set.str[STRING_SSL_CAFILE], userArg);
+	  }
+  }
     break;
   case CURLOPT_CAPATH:
 #ifdef have_curlssl_ca_path /* not supported by all backends */
@@ -5775,6 +5786,7 @@ static CURLcode create_conn(struct SessionHandle *data,
      copies will be separately allocated.
   */
   data->set.ssl.CApath = data->set.str[STRING_SSL_CAPATH];
+  data->set.ssl.CAPEM = data->set.str[STRING_SSL_CAPEM];
   data->set.ssl.CAfile = data->set.str[STRING_SSL_CAFILE];
   data->set.ssl.CRLfile = data->set.str[STRING_SSL_CRLFILE];
   data->set.ssl.issuercert = data->set.str[STRING_SSL_ISSUERCERT];
